@@ -14,10 +14,17 @@ RUN wget -qO- https://www.slf4j.org/dist/slf4j-$SLF4J_VERSION.tar.gz | tar xvz -
 RUN wget https://github.com/dx42/gmetrics/releases/download/v$GMETRICS_VERSION/GMetrics-$GMETRICS_VERSION.jar \
     -P /opt/GMetrics-$GMETRICS_VERSION
 
-COPY codenarc /usr/bin
+RUN apt-get update
+RUN apt-get install python3 -y
 
-USER groovy
+COPY codenarc /usr/bin
+ADD ruleset.groovy /opt/ruleset.groovy
+ADD run_codenarc.py /opt/run_codenarc.py
+
+RUN useradd jenkins
+USER jenkins
 
 WORKDIR /ws
 
-ENTRYPOINT ["codenarc"]
+# -rulesetfiles must not be an absolute path, only a relative one to the CLASSPATH
+CMD ["python3", "/opt/run_codenarc.py"]

@@ -6,5 +6,5 @@ CODENARC_JAR=/opt/CodeNarc-$CODENARC_VERSION/CodeNarc-$CODENARC_VERSION.jar
 GROOVY_JAR=$GROOVY_HOME/embeddable/groovy-all-$GROOVY_VERSION.jar
 
 java \
-  -classpath "$SLF4J_JAR:$GMETRICS_JAR:$CODENARC_JAR:$GROOVY_JAR" \
+  -classpath /opt/:"$SLF4J_JAR:$GMETRICS_JAR:$CODENARC_JAR:$GROOVY_JAR" \
   org.codenarc.CodeNarc "$@"
