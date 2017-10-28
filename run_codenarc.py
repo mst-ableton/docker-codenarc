@@ -1,30 +1,11 @@
 #!/bin/env python
 
-from html.parser import HTMLParser
+import argparse
 import os
 import subprocess
 import sys
 
-output_file = 'codenarc-output.html'
-output = subprocess.run(
-    ["/usr/bin/codenarc", "-rulesetfiles=ruleset.groovy",
-     "-report=html:%s" % output_file, "-includes=**/Jenkinsfile"],
-    stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-sys.stdout.buffer.write(output.stdout)
-
-
-# CodeNarc doesn't fail on compilation errors (?)
-if 'Compilation failed' in str(output.stdout):
-    print("Error when compiling files!")
-    sys.exit(1)
-
-print("Return code: %d" % output.returncode)
-
-if output.returncode != 0:
-    sys.exit(output.retcode)
-if not os.path.exists(output_file):
-    print("Error: %s was not generated, aborting!" % output_file)
-    sys.exit(1)
+from html.parser import HTMLParser
 
 class CodeNarcHTMLParser(HTMLParser):
     saw_all_packages = False
@@ -50,18 +31,54 @@ class CodeNarcHTMLParser(HTMLParser):
             self.violating_files = int(data)
 
 
-parser = CodeNarcHTMLParser()
-with open(output_file) as f:
-    parser.feed(f.read())
+def main():
+    print("hello, it's me!") 
 
-if parser.violating_files is None:
-    print("Error parsing CodeNarc output!")
-    sys.exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'codenarc_args', nargs='*',
+        default=['-includes=**/Jenkinsfile'],
+        help='Extra arguments to pass to CodeNarc, such as -includes=')
+    parsed_args = parser.parse_args()
 
-if parser.violating_files > 0:
-    print("Error: %d files with violations. See %s for details."
-          % (parser.violating_files, output_file))
-    sys.exit(1)
+    output_file = 'codenarc-output.html'
+    args = ["/usr/bin/codenarc", "-rulesetfiles=ruleset.groovy",
+            "-report=html:%s" % output_file] + parsed_args.codenarc_args
 
-print("No violations detected!")
-sys.exit(0) 
+    return 0
+    output = subprocess.run(args, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+    sys.stdout.buffer.write(output.stdout)
+
+
+    # CodeNarc doesn't fail on compilation errors (?)
+    if 'Compilation failed' in str(output.stdout):
+        print("Error when compiling files!")
+        return 1
+
+    print("Return code: %d" % output.returncode)
+
+    if output.returncode != 0:
+        return output.retcode
+    if not os.path.exists(output_file):
+        print("Error: %s was not generated, aborting!" % output_file)
+        return 1
+
+    parser = CodeNarcHTMLParser()
+    with open(output_file) as f:
+        parser.feed(f.read())
+
+    if parser.violating_files is None:
+        print("Error parsing CodeNarc output!")
+        return 1
+
+    if parser.violating_files > 0:
+        print("Error: %d files with violations. See %s for details."
+              % (parser.violating_files, output_file))
+        return 1
+
+    print("No violations detected!")
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
